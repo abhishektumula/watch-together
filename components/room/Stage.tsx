@@ -1,6 +1,8 @@
 'use client';
 
 import { useRef, type CSSProperties, type PointerEvent as ReactPointerEvent } from 'react';
+import { CopyButton } from '@/components/CopyButton';
+import { Icon } from '@/components/Icon';
 import type { CallState } from '@/lib/call-client';
 import type { FloatPositions, Layout } from './prefs';
 import { VideoView } from './VideoView';
@@ -9,18 +11,20 @@ type Props = {
   state: CallState;
   name: string;
   layout: Layout;
+  /** Movie only: hide both faces. */
+  facesHidden: boolean;
   floatPos: FloatPositions;
   setFloatPos: (update: (prev: FloatPositions) => FloatPositions) => void;
   movieVolume: number;
   voiceVolume: number;
   onBlocked: () => void;
-  onInvite: () => void;
+  inviteLink: string;
 };
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const initial = (name?: string | null) => (name || '?').trim().charAt(0).toUpperCase() || '?';
 
-export function Stage({ state, name, layout, floatPos, setFloatPos, movieVolume, voiceVolume, onBlocked, onInvite }: Props) {
+export function Stage({ state, name, layout, facesHidden, floatPos, setFloatPos, movieVolume, voiceVolume, onBlocked, inviteLink }: Props) {
   const stageRef = useRef<HTMLDivElement>(null);
   const { peer, remoteMeta: m, remoteStreams, localScreen } = state;
   const peerName = peer?.name || 'Them';
@@ -39,7 +43,8 @@ export function Stage({ state, name, layout, floatPos, setFloatPos, movieVolume,
   const remoteCamVisible = !!camStream && m.camOn && camStream.getVideoTracks().length > 0;
 
   // In Cinema the faces float over the movie; in Faces the movie floats over the faces.
-  const floating: 'faces' | 'screen' | null = !hasScreen ? null : layout === 'cinema' ? 'faces' : layout === 'faces' ? 'screen' : null;
+  const floating: 'faces' | 'screen' | null =
+    !hasScreen || facesHidden ? null : layout === 'cinema' ? 'faces' : layout === 'faces' ? 'screen' : null;
   const pos = floating ? floatPos[layout] : undefined;
   const floatStyle: CSSProperties | undefined = pos
     ? { left: `${pos.left}%`, top: `${pos.top}%`, width: `${pos.width}%`, right: 'auto', bottom: 'auto' }
@@ -95,7 +100,9 @@ export function Stage({ state, name, layout, floatPos, setFloatPos, movieVolume,
     });
   };
 
-  const stageClass = ['stage', `layout-${layout}`, hasScreen ? 'has-screen' : 'no-screen'].join(' ');
+  const stageClass = ['stage', `layout-${layout}`, hasScreen ? 'has-screen' : 'no-screen', hasScreen && facesHidden && 'faces-hidden']
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div ref={stageRef} className={stageClass}>
@@ -106,7 +113,6 @@ export function Stage({ state, name, layout, floatPos, setFloatPos, movieVolume,
         onDoubleClick={resetFloat('screen')}
       >
         <VideoView stream={screenStream} muted={!remoteSharing} volume={movieVolume} onBlocked={onBlocked} />
-        <div className="screen-label">{remoteSharing ? `${peerName} is sharing` : localScreen ? 'You are sharing' : ''}</div>
         {hasScreen && !screenStream && <div className="screen-empty">Connecting to the shared screen…</div>}
       </div>
 
@@ -123,16 +129,18 @@ export function Stage({ state, name, layout, floatPos, setFloatPos, movieVolume,
           </div>
           {!peer && (
             <div className="waiting">
-              <div className="pulse" />
-              <p>Waiting for the other person…</p>
-              <button className="btn small" onClick={onInvite} onPointerDown={(e) => e.stopPropagation()}>
-                Copy invite link
-              </button>
+              <div className="spinner" />
+              <p>Waiting for the other person to join</p>
+              <span onPointerDown={(e) => e.stopPropagation()}>
+                <CopyButton text={inviteLink} className="btn btn-sm" copiedContent={<><Icon name="check" size={14} /> Link copied</>}>
+                  <Icon name="copy" size={14} /> Copy invite link
+                </CopyButton>
+              </span>
             </div>
           )}
           <div className="name-tag">
-            {peer && !m.micOn && <span>🔇</span>}
-            <span>{peer ? peerName : 'Waiting…'}</span>
+            {peer && !m.micOn && <Icon name="micOff" size={12} strokeWidth={2} />}
+            <span>{peer ? peerName : 'Waiting'}</span>
           </div>
         </div>
 
@@ -142,7 +150,7 @@ export function Stage({ state, name, layout, floatPos, setFloatPos, movieVolume,
             <span>{initial(name)}</span>
           </div>
           <div className="name-tag">
-            {!state.micOn && <span>🔇</span>}
+            {!state.micOn && <Icon name="micOff" size={12} strokeWidth={2} />}
             <span>You</span>
           </div>
         </div>

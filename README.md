@@ -1,11 +1,12 @@
-# 🍿 Watch Together
+# Watch Together
 
 A private video room for exactly two people. One of you shares a movie, and **both faces stay on screen next to (or on top of) the movie**, unlike Google Meet, where sharing your screen hides the other person.
 
 ## Features
 
 - **Rooms for two**: each room gets a random ID (`abc-defg-hij`) and a password. A third person is turned away.
-- **Four layouts** that each person picks independently (press `L` to cycle):
+- **Screen-share menu**: a floating button in the corner of the shared screen opens every screen action: layout, hide/show faces, reset position, fullscreen, movie and voice volume, and (for the sharer) stop sharing. It fades out when the mouse is idle.
+- **Four layouts** that each person picks independently (from the screen-share menu, or press `L` to cycle):
   - **Cinema**: the movie fills the screen and both faces float on top. Drag them anywhere, resize from the corner grip, and double-click to reset.
   - **Sidebar**: movie on the left, both faces stacked on the right.
   - **Strip**: movie on top, faces in a row underneath.
@@ -13,7 +14,7 @@ A private video room for exactly two people. One of you shares a movie, and **bo
 - **Fullscreen keeps the faces**: fullscreen applies to the whole stage, not just the video, and the controls fade out.
 - **The sharer stays in the room**: when you share a Chrome tab, the browser stays on the Watch Together tab (no jumping to the movie tab), so you watch the same layout they do.
 - **Movie sound** is shared along with the picture (Chrome/Edge tab audio), with separate volume sliders for *movie* and *their voice*.
-- Bandwidth goes mostly to the movie (about 6 Mbps); the face cams are capped at about 600 kbps.
+- **Quality**: VP9 video for everything (sharper than VP8 at the same bandwidth); the movie is captured at up to 1080p30 and may use up to 8 Mbps, with Chrome told to keep the resolution up when bandwidth dips; faces get up to 1.5 Mbps at 720p; movie sound is sent as **stereo Opus at up to 256 kbps** instead of WebRTC's default mono voice quality.
 - Chat, floating emoji reactions, mic/camera toggles (turning the camera off really turns it off, so the light goes out), and automatic reconnection.
 - Peer-to-peer: video goes directly between the two browsers. The server only relays connection setup messages. Nothing is recorded.
 
@@ -29,7 +30,7 @@ bun run dev                    # development with hot reload → http://localhos
 bun run build && bun start     # production                  (PORT=xxxx to change)
 ```
 
-Open the page, click **Create room**, then **Invite** → copy the link (the password is inside it) and send it to her.
+Open the page and click **Create a room**. The next screen shows the room ID, password and invite link, each with a copy button; **Copy invite** copies all three as one message. The link already contains the password.
 
 ### Keyboard shortcuts (in a call)
 
@@ -39,6 +40,7 @@ Open the page, click **Create room**, then **Invite** → copy the link (the pas
 | `V` | Camera on / off |
 | `S` | Start / stop sharing |
 | `L` | Cycle layout |
+| `H` | Hide / show faces (while sharing) |
 | `F` | Fullscreen |
 | `C` | Chat |
 
@@ -90,8 +92,10 @@ app/room/[id]/page.tsx          Room page (checks the room exists, passes ICE se
 components/HomeForms.tsx        Create / join forms
 components/room/Room.tsx        Lobby → call → left; fullscreen, shortcuts, preferences
 components/room/Stage.tsx       The four layouts + draggable/resizable floating tiles
-components/room/Controls.tsx    Bottom bar: mic, camera, share, layouts, reactions, volume
-components/room/…               Lobby, ChatPanel, InviteDialog, VideoView
+components/room/Controls.tsx    Bottom bar: room ID, status, mic, camera, share, reactions, leave, invite, chat, fullscreen
+components/room/ScreenMenu.tsx  Floating screen-share menu: layouts, faces, volume, fullscreen, stop sharing
+components/Icon.tsx             Line icon set
+components/room/…               Lobby, ChatPanel, InviteDialog, ShareDetails, VideoView
 app/globals.css                 Theme and layout CSS
 ```
 
